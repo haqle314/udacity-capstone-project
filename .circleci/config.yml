@@ -81,7 +81,7 @@ jobs:
             echo "IMAGE_TAG=$IMAGE_TAG"
             cd k8s
             sed -i "s/REPLACE/${CIRCLE_WORKFLOW_ID:0:7}/g" namespace.yml deployment.yml
-            sed -i "s/IMAGE_TAG/${IMAGE_TAG}/g" deployment.yml
+            sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" deployment.yml
             
             kubectl apply -f namespace.yml
             kubectl apply -f deployment.yml
