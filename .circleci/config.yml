@@ -45,7 +45,8 @@ jobs:
             IMAGE_TAG=${ECR_URI}:${CIRCLE_WORKFLOW_ID:0:7}
             IMAGE_LATEST_TAG=${ECR_URI}:latest
             docker build -t $IMAGE_TAG -t $IMAGE_LATEST_TAG .
-            docker push -a $IMAGE_TAG
+            docker push $IMAGE_TAG
+            docker push $IMAGE_LATEST_TAG
             echo "export IMAGE_TAG=$IMAGE_TAG" > image_tag.sh
       - persist_to_workspace:
           root: .
