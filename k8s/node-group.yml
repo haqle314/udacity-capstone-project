@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ClusterConfig
+
+metadata:
+  name: capstone
+  region: us-east-1
+
+managedNodeGroups:
+  - name: ng-REPLACE-workers
+    labels: { role: workers }
+    instanceType: m5.large
+    desiredCapacity: 1
+    volumeSize: 80
+    privateNetworking: false
+
+availabilityZones: ["us-east-1a", "us-east-1b"]

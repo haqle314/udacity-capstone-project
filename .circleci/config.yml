@@ -1,0 +1,72 @@
+version: 2.1
+
+commands:
+  ecr_login:
+    description: Login to ECR
+    steps:
+      # ECR_URI is provided as a CircleCI env var
+      - run: aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_URI
+
+  install_eksctl:
+    description: Install eksctl
+    steps:
+      - run: |
+          curl -sL https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz -o eksctl.tar.gz
+          tar -xf eksctl.tar.gz
+          sudo mv eksctl -t /usr/local/bin
+          rm eksctl.tar.gz
+
+  update_kubeconfig:
+    description: Set kubeconfig to connect to EKS
+    steps:
+      - run: aws eks update-kubeconfig --name udacity
+
+jobs:
+  lint:
+    docker:
+      - image: hadolint/hadolint:latest-alpine
+    steps:
+      - checkout
+      - run:
+          name: Run linter
+          command: hadolint --require-label author:text --require-label version:semver Dockerfile
+
+  build:
+    docker:
+      - image: docker:24.0-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - ecr_login
+      - run: apk add -U aws-cli
+      - run:
+          name: Build Docker image
+          command: |
+            IMAGE_TAG=${ECR_URI}:${CIRCLE_WORKFLOW_ID:0:7}
+            IMAGE_LATEST_TAG=${ECR_URI}:latest
+            docker build -t $IMAGE_TAG -t $IMAGE_LATEST_TAG .
+            docker push -a $IMAGE_TAG
+            echo "export IMAGE_TAG=$IMAGE_TAG" > image_tag.sh
+      - persist_to_workspace:
+          root: .
+          paths: [image_tag.sh]
+
+  config-nodegroup:
+    docker:
+      - image: cimg/aws:2023.09
+    steps:
+      - checkout
+      - install_eksctl
+      - update_kubeconfig
+      - run:
+          name: Create node group
+          command: |
+            sed -i "s/REPLACE/${CIRCLE_WORKFLOW_ID:0:7}/g" node_group.yml
+            eksctl create nodegroup -f k8s/node-group.yml
+
+workflows:
+  default:
+    jobs:
+      - lint
+      - build
+      - config-nodegroup
