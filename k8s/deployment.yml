@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ns-capstone-REPLACE
+  labels:
+    service: ha-amazing-webpage
+  name: ha-amazing-webpage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: ha-amazing-webpage
+      version: v1.0.0
+  template:
+    metadata:
+      namespace: ns-capstone-REPLACE
+      labels:
+        service: ha-amazing-webpage
+        version: v1.0.0
+        api: external
+    spec:
+      containers:
+        - image: IMAGE_TAG
+          name: ha-amazing-webpage
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80

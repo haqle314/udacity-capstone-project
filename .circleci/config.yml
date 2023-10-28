@@ -65,9 +65,37 @@ jobs:
             sed -i "s/REPLACE/${CIRCLE_WORKFLOW_ID:0:7}/g" k8s/node-group.yml
             eksctl create nodegroup -f k8s/node-group.yml
 
+  deploy:
+    docker:
+      - image: cimg/aws:2023.09
+    steps:
+      - checkout
+      - install_eksctl
+      - update_kubeconfig
+      - attach_workspace:
+          at: .
+      - run:
+          name: Deploy service
+          command: |
+            source image_tag.sh
+            echo "IMAGE_TAG=$IMAGE_TAG"
+            cd k8s
+            sed -i "s/REPLACE/${CIRCLE_WORKFLOW_ID:0:7}/g" namespace.yml deployment.yml
+            sed -i "s/IMAGE_TAG/${IMAGE_TAG}/g" deployment.yml
+            
+            kubectl apply -f namespace.yml
+            kubectl apply -f deployment.yml
+            kubectl expose -f deployment.yml --namespace=ns-capstone-${CIRCLE_WORKFLOW_ID:0:7} --type=LoadBalancer --name=ha-amazing-webpage --port=80
+            kubectl get deployments,replicasets,services,pods --namespace=ns-capstone-${CIRCLE_WORKFLOW_ID:0:7}
+            
+
 workflows:
   default:
     jobs:
       - lint
       - build
       - config-nodegroup
+      - deploy:
+          requires:
+            - build
+            - config-nodegroup
