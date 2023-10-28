@@ -37,8 +37,8 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - ecr_login
       - run: apk add -U aws-cli
+      - ecr_login
       - run:
           name: Build Docker image
           command: |
@@ -61,7 +61,7 @@ jobs:
       - run:
           name: Create node group
           command: |
-            sed -i "s/REPLACE/${CIRCLE_WORKFLOW_ID:0:7}/g" node_group.yml
+            sed -i "s/REPLACE/${CIRCLE_WORKFLOW_ID:0:7}/g" k8s/node-group.yml
             eksctl create nodegroup -f k8s/node-group.yml
 
 workflows:
